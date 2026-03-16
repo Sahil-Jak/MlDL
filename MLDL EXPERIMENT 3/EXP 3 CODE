@@ -1,0 +1,142 @@
+TITANIC SURVIVAL PREDICTION 
+Decision Tree & Random Forest Classification 
+import warnings 
+warnings.filterwarnings("ignore") 
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt 
+from google.colab import files 
+from sklearn.model_selection import train_test_split 
+from sklearn.tree import DecisionTreeClassifier, plot_tree 
+from sklearn.ensemble import RandomForestClassifier 
+from sklearn.preprocessing import StandardScaler 
+from sklearn.metrics import ( 
+accuracy_score, 
+classification_report, 
+confusion_matrix, 
+roc_curve, 
+auc 
+) 
+# ========================== 
+# UPLOAD DATASET 
+# ========================== 
+uploaded = files.upload() 
+f
+ilename = list(uploaded.keys())[0] 
+df = pd.read_csv(filename) 
+print("Dataset Shape:", df.shape) 
+display(df.head()) 
+# ========================== 
+# DATA PREPROCESSING 
+# ========================== 
+# Drop unnecessary columns 
+drop_cols = ["PassengerId", "Name", "Ticket", "Cabin"] 
+for col in drop_cols: 
+if col in df.columns: 
+df.drop(col, axis=1, inplace=True) 
+# Handle missing values 
+df.fillna(df.mode().iloc[0], inplace=True) 
+# Convert categorical to numeric 
+df = pd.get_dummies(df, drop_first=True) 
+# Target and features 
+target = "Survived" 
+X = df.drop(target, axis=1) 
+y = df[target] 
+# ========================== 
+# TRAIN TEST SPLIT 
+# ========================== 
+X_train, X_test, y_train, y_test = train_test_split( 
+X, y, 
+test_size=0.2, 
+random_state=42, 
+stratify=y 
+) 
+# ========================== 
+# FEATURE SCALING 
+# ========================== 
+scaler = StandardScaler() 
+X_train_scaled = scaler.fit_transform(X_train) 
+X_test_scaled = scaler.transform(X_test) 
+# ========================== 
+# DECISION TREE MODEL 
+# ========================== 
+dt = DecisionTreeClassifier(max_depth=5, random_state=42) 
+dt.fit(X_train_scaled, y_train) 
+dt_preds = dt.predict(X_test_scaled) 
+dt_probs = dt.predict_proba(X_test_scaled)[:, 1] 
+print("\n--- Decision Tree Performance ---") 
+print("Accuracy:", accuracy_score(y_test, dt_preds)) 
+print(classification_report(y_test, dt_preds)) 
+# ========================== 
+# RANDOM FOREST MODEL 
+# ========================== 
+rf = RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42) 
+rf.fit(X_train_scaled, y_train) 
+rf_preds = rf.predict(X_test_scaled) 
+rf_probs = rf.predict_proba(X_test_scaled)[:, 1] 
+print("\n--- Random Forest Performance ---") 
+print("Accuracy:", accuracy_score(y_test, rf_preds)) 
+print(classification_report(y_test, rf_preds)) 
+# ========================== 
+# CONFUSION MATRIX 
+# ========================== 
+cm_dt = confusion_matrix(y_test, dt_preds) 
+cm_rf = confusion_matrix(y_test, rf_preds) 
+plt.figure(figsize=(10,4)) 
+plt.subplot(1,2,1) 
+plt.imshow(cm_dt) 
+plt.title("Decision Tree Confusion Matrix") 
+plt.colorbar() 
+plt.xlabel("Predicted") 
+plt.ylabel("Actual") 
+for i in range(cm_dt.shape[0]): 
+for j in range(cm_dt.shape[1]): 
+plt.text(j, i, cm_dt[i,j], ha="center") 
+plt.subplot(1,2,2) 
+plt.imshow(cm_rf) 
+plt.title("Random Forest Confusion Matrix") 
+plt.colorbar() 
+plt.xlabel("Predicted") 
+plt.ylabel("Actual") 
+for i in range(cm_rf.shape[0]): 
+for j in range(cm_rf.shape[1]): 
+plt.text(j, i, cm_rf[i,j], ha="center") 
+plt.tight_layout() 
+plt.show() 
+# ========================== 
+# ROC CURVE 
+# ========================== 
+dt_fpr, dt_tpr, _ = roc_curve(y_test, dt_probs) 
+rf_fpr, rf_tpr, _ = roc_curve(y_test, rf_probs) 
+plt.figure() 
+plt.plot(dt_fpr, dt_tpr, label=f"Decision Tree AUC = {auc(dt_fpr, dt_tpr):.2f}") 
+plt.plot(rf_fpr, rf_tpr, label=f"Random Forest AUC = {auc(rf_fpr, rf_tpr):.2f}") 
+plt.plot([0,1], [0,1], "--") 
+plt.xlabel("False Positive Rate") 
+plt.ylabel("True Positive Rate") 
+plt.title("ROC Curve Comparison") 
+plt.legend() 
+plt.show() 
+# ========================== 
+# FEATURE IMPORTANCE (RF) 
+# ========================== 
+importances = rf.feature_importances_ 
+indices = np.argsort(importances)[-10:] 
+plt.figure() 
+plt.barh(X.columns[indices], importances[indices]) 
+plt.title("Top 10 Feature Importances (Random Forest)") 
+plt.xlabel("Importance Score") 
+plt.show() 
+# ========================== 
+# DECISION TREE VISUALIZATION 
+# ========================== 
+plt.figure(figsize=(18,8)) 
+plot_tree( 
+dt, 
+feature_names=X.columns, 
+class_names=["Not Survived", "Survived"], 
+f
+illed=True 
+) 
+plt.title("Decision Tree Structure") 
+plt.show() 
