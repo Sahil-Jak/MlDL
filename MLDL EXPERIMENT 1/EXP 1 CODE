@@ -1,0 +1,140 @@
+Linear Regression 
+# Import libraries 
+from google.colab import files 
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+from sklearn.model_selection import train_test_split 
+from sklearn.linear_model import LinearRegression 
+from sklearn import metrics 
+# Upload dataset 
+uploaded = files.upload() 
+# Load dataset 
+df = pd.read_csv(list(uploaded.keys())[0]) 
+print("===== Dataset Preview =====") 
+print(df.head()) 
+# Convert categorical columns to numeric 
+df = pd.get_dummies(df, drop_first=True) 
+print("\n===== Processed Dataset =====") 
+print(df.head()) 
+# Features and target 
+X = df.drop("charges", axis=1) 
+y = df["charges"] 
+print("\n===== Features Used =====") 
+print(X.columns) 
+# Train-test split 
+X_train, X_test, y_train, y_test = train_test_split( 
+X, y, test_size=0.2, random_state=42 
+) 
+# Train model 
+model = LinearRegression() 
+model.fit(X_train, y_train) 
+# Prediction 
+y_pred = model.predict(X_test) 
+# Model evaluation 
+mae = metrics.mean_absolute_error(y_test, y_pred) 
+mse = metrics.mean_squared_error(y_test, y_pred) 
+rmse = np.sqrt(mse) 
+r2 = metrics.r2_score(y_test, y_pred) 
+print("\n===== Model Performance =====") 
+print(f"Mean Absolute Error (MAE): {mae:.4f}") 
+print(f"Mean Squared Error (MSE): {mse:.4f}") 
+print(f"Root Mean Squared Error (RMSE): {rmse:.4f}") 
+print(f"R-squared Score (R2): {r2:.4f} ({r2*100:.2f}%)") 
+# Regression equation details 
+print("\n===== Regression Equation Details =====") 
+print(f"Intercept (b0): {model.intercept_:.4f}") 
+coeff_df = pd.DataFrame(model.coef_, X.columns, 
+columns=["Coefficient"]) 
+print(coeff_df) 
+# Actual vs Predicted Plot 
+plt.figure(figsize=(8,6)) 
+plt.scatter(y_test, y_pred, alpha=0.7) 
+plt.plot([y.min(), y.max()], [y.min(), y.max()]) 
+plt.xlabel("Actual Charges") 
+plt.ylabel("Predicted Charges") 
+plt.title("Actual vs Predicted Insurance Charges") 
+plt.grid(True) 
+plt.show() 
+
+
+Logistic Regression (Diabetes Dataset) 
+# Import libraries 
+from google.colab import files 
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+from sklearn.model_selection import train_test_split 
+from sklearn.preprocessing import StandardScaler 
+from sklearn.linear_model import LogisticRegression 
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score 
+# Upload dataset 
+uploaded = files.upload() 
+# Load dataset 
+df = pd.read_csv(list(uploaded.keys())[0]) 
+print("===== Dataset Preview =====") 
+print(df.head()) 
+# Convert categorical values if present 
+for col in df.columns: 
+if df[col].dtype == "object": 
+df[col] = df[col].astype("category").cat.codes 
+# Assume last column is target (same logic as your experiment file) 
+target = df.columns[-1] 
+# Features and target 
+X = df.drop(target, axis=1) 
+y = df[target] 
+# Keep only numeric features 
+X = X.select_dtypes(include=[np.number]) 
+print("\n===== Features Used =====") 
+print(X.columns) 
+print("\nTarget Variable:", target) 
+# Train test split 
+X_train, X_test, y_train, y_test = train_test_split( 
+X, y, test_size=0.2, random_state=42 
+) 
+# Feature scaling (important for logistic regression) 
+scaler = StandardScaler() 
+X_train = scaler.fit_transform(X_train) 
+X_test = scaler.transform(X_test) 
+# Train model 
+model = LogisticRegression(max_iter=10000) 
+model.fit(X_train, y_train) 
+# Prediction 
+y_pred = model.predict(X_test) 
+# Performance metrics 
+acc = accuracy_score(y_test, y_pred) 
+prec = precision_score(y_test, y_pred) 
+rec = recall_score(y_test, y_pred) 
+f1 = f1_score(y_test, y_pred) 
+print("\n===== Model Performance =====") 
+print(f"Accuracy: {acc:.4f} ({acc*100:.2f}%)") 
+print(f"Precision: {prec:.4f} ({prec*100:.2f}%)") 
+print(f"Recall: {rec:.4f} ({rec*100:.2f}%)") 
+print(f"F1 Score: {f1:.4f} ({f1*100:.2f}%)") 
+# Confusion matrix 
+cm = confusion_matrix(y_test, y_pred) 
+tn, fp, fn, tp = cm.ravel() 
+print("\n===== Confusion Matrix Values =====") 
+print(f"TP: {tp}, TN: {tn}, FP: {fp}, FN: {fn}") 
+# Confusion matrix plot 
+plt.figure(figsize=(6,5)) 
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues') 
+plt.xlabel("Predicted Label") 
+plt.ylabel("True Label") 
+plt.title("Confusion Matrix") 
+plt.show() 
+# Sigmoid curve visualization 
+z = model.decision_function(X_test) 
+prob = model.predict_proba(X_test)[:,1] 
+plt.figure(figsize=(8,6)) 
+idx = np.argsort(z) 
+plt.scatter(z, prob, alpha=0.3) 
+plt.plot(z[idx], prob[idx]) 
+plt.axhline(0.5) 
+plt.xlabel("Linear Decision Function (z)") 
+plt.ylabel("Probability") 
+plt.title("Logistic Regression Sigmoid Curve") 
+plt.grid(True) 
+plt.show()
